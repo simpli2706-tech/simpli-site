@@ -1,0 +1,4 @@
+node_modules/
+simpli.db
+*.log
+.DS_Store
