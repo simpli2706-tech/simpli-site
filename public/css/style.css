@@ -422,7 +422,7 @@ footer{ padding:64px 0 28px; }
     background:var(--paper);
     position:absolute;
     top:76px; left:0; width:100%;
-    padding:32px 32px;
+    padding:12px 32px;
     border-bottom:1px solid var(--border);
     gap:20px;
   }
