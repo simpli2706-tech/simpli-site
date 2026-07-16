@@ -1,0 +1,935 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+public/
+  css/
+    style.css
+  images/
+    simpli-logo.png
+  js/
+    script.js
+  index.html
+.gitignore
+.node-version
+package.json
+server.js
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="public/js/script.js">
+(function() {
+  // Menu mobile
+  const menuToggle = document.getElementById('menuToggle');
+  const navLinks = document.getElementById('navLinks');
+  menuToggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    navLinks.classList.toggle('open');
+    const icon = this.querySelector('i');
+    icon.classList.toggle('fa-bars');
+    icon.classList.toggle('fa-times');
+  });
+
+  document.querySelectorAll('.nav-links a').forEach(function(link) {
+    link.addEventListener('click', function() {
+      navLinks.classList.remove('open');
+      const icon = menuToggle.querySelector('i');
+      icon.classList.add('fa-bars');
+      icon.classList.remove('fa-times');
+    });
+  });
+
+  // FAQ accordion
+  document.querySelectorAll('.faq-question').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const answer = this.nextElementSibling;
+      const isOpen = answer.classList.contains('open');
+      document.querySelectorAll('.faq-answer').forEach(function(a) { a.classList.remove('open'); });
+      document.querySelectorAll('.faq-question').forEach(function(b) {
+        b.classList.remove('active');
+        b.setAttribute('aria-expanded', 'false');
+      });
+      if (!isOpen) {
+        answer.classList.add('open');
+        this.classList.add('active');
+        this.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  // Scroll suave
+  document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+    anchor.addEventListener('click', function(e) {
+      const href = this.getAttribute('href');
+      if (href === '#') {
+        e.preventDefault();
+        return;
+      }
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Hero visual grid
+  const grid = document.getElementById('heroVisual');
+  if (grid) {
+    const total = 36;
+    const onCells = [1,4,7,8,13,14,15,20,21,26,27,28,29,33];
+    const accentCell = 15;
+    for (let i = 0; i < total; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'hv-cell';
+      if (i === accentCell) cell.classList.add('teal');
+      else if (onCells.includes(i)) cell.classList.add('on');
+      grid.appendChild(cell);
+    }
+  }
+})();
+</file>
+
+<file path=".gitignore">
+node_modules/
+simpli.db
+*.log
+.DS_Store
+</file>
+
+<file path=".node-version">
+v20.20.2
+</file>
+
+<file path="package.json">
+{
+  "name": "simpli-site",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sql.js": "^1.8.0"
+  }
+}
+</file>
+
+<file path="server.js">
+const express = require('express');
+const path = require('path');
+const initSqlJs = require('sql.js');
+const fs = require('fs');
+
+const app = express();
+const PORT = 3000;
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+async function initDB() {
+  const SQL = await initSqlJs();
+  let db;
+  if (fs.existsSync('simpli.db')) {
+    const fileBuffer = fs.readFileSync('simpli.db');
+    db = new SQL.Database(fileBuffer);
+  } else {
+    db = new SQL.Database();
+  }
+  db.run(`CREATE TABLE IF NOT EXISTS contatos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    email TEXT NOT NULL,
+    mensagem TEXT NOT NULL,
+    data_envio DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+  const data = db.export();
+  fs.writeFileSync('simpli.db', Buffer.from(data));
+  return db;
+}
+
+let dbPromise = initDB();
+
+app.post('/api/contato', async (req, res) => {
+  const { nome, email, mensagem } = req.body;
+  if (!nome || !email || !mensagem) {
+    return res.status(400).json({ error: 'Por favor, preencha todos os campos.' });
+  }
+  try {
+    const db = await dbPromise;
+    db.run("INSERT INTO contatos (nome, email, mensagem) VALUES (?, ?, ?)", [nome, email, mensagem]);
+    const data = db.export();
+    fs.writeFileSync('simpli.db', Buffer.from(data));
+    res.json({ success: 'Mensagem enviada com sucesso! Entraremos em contato em breve.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro interno. Tente novamente.' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`SIMPLi rodando em http://localhost:${PORT}`);
+});
+</file>
+
+<file path="public/index.html">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SIMPLi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="container header-content">
+      <a href="#" class="logo" id="logoLink">
+        <img src="/images/simpli-logo.png" alt="simpli" />
+      </a>
+      <button class="menu-toggle" id="menuToggle" aria-label="Menu"><i class="fas fa-bars"></i></button>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#solucoes">Soluções</a></li>
+        <li><a href="#depoimentos">Depoimentos</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="#contato" class="btn btn-primary">Fale conosco</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="eyebrow"><span class="mark"></span>Transparência em primeiro lugar</div>
+        <h1>Sistemas que <em>simplificam</em>, sem complicar seu negócio.</h1>
+        <p>Criamos soluções personalizadas para SaaS, ecommerce e operações — com ética, clareza e foco no que realmente importa.</p>
+        <div class="hero-buttons">
+          <a href="#contato" class="btn btn-primary">Quero simplificar <i class="fas fa-arrow-right"></i></a>
+          <a href="#solucoes" class="btn btn-outline">Ver soluções</a>
+        </div>
+        <div class="hero-note"><i class="fas fa-shield-alt"></i> Sem pegadinhas · Preços claros · Suporte humano</div>
+      </div>
+      <div class="hero-visual" id="heroVisual"></div>
+    </div>
+  </section>
+
+  <!-- BENEFÍCIOS -->
+  <section class="section" id="beneficios">
+    <div class="container">
+      <div class="section-head center">
+        <div class="section-label"><span class="mark"></span>Por que confiar</div>
+        <h2 class="section-title">Construído com respeito ao seu tempo e dinheiro</h2>
+        <p class="section-sub">Nossa abordagem é baseada em valores que colocam você no centro, sem artifícios.</p>
+      </div>
+    </div>
+    <div class="container" style="padding:0;">
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <div class="benefit-index">01</div>
+          <h3>Personalização real</h3>
+          <p>Nada de soluções prontas. Entendemos seu contexto para criar o que faz sentido para você.</p>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-index">02</div>
+          <h3>Transparência total</h3>
+          <p>Cronogramas, custos e expectativas são comunicados de forma clara desde o primeiro contato.</p>
+        </div>
+        <div class="benefit-card">
+          <div class="benefit-index">03</div>
+          <h3>Suporte humano</h3>
+          <p>Você fala com pessoas que entendem do seu negócio, não com robôs ou protocolos frios.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOLUÇÕES -->
+  <section class="section solutions" id="solucoes">
+    <div class="container">
+      <div class="section-head center">
+        <div class="section-label"><span class="mark"></span>Especialidades</div>
+        <h2 class="section-title">Onde a simpli atua</h2>
+        <p class="section-sub">Projetos sob medida para cada modelo de negócio, sempre com foco em eficiência e escalabilidade.</p>
+      </div>
+      <div class="solutions-grid">
+        <div class="solution-card">
+          <div class="solution-num">01 / SaaS</div>
+          <h3>Plataformas SaaS</h3>
+          <p>Arquitetura robusta, integrações e uma experiência de usuário que reduz churn e aumenta retenção.</p>
+          <span class="solution-tag">Customizável</span>
+        </div>
+        <div class="solution-card">
+          <div class="solution-num">02 / Ecommerce</div>
+          <h3>Ecommerce</h3>
+          <p>Plataformas de venda que integram estoque, pagamentos e logística com simplicidade e performance.</p>
+          <span class="solution-tag">Alta conversão</span>
+        </div>
+        <div class="solution-card">
+          <div class="solution-num">03 / Operações</div>
+          <h3>Operações</h3>
+          <p>Automatize processos administrativos, reduza erros e ganhe visibilidade com dashboards inteligentes.</p>
+          <span class="solution-tag">Eficiência</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEPOIMENTOS -->
+  <section class="section" id="depoimentos">
+    <div class="container">
+      <div class="section-head center">
+        <div class="section-label"><span class="mark"></span>Quem já confiou</div>
+        <h2 class="section-title">Histórias reais, resultados concretos</h2>
+        <p class="section-sub">Depoimentos de clientes que valorizam a honestidade e a competência técnica.</p>
+      </div>
+    </div>
+    <div class="container" style="padding:0;">
+      <div class="testimonials-grid">
+        <div class="testimonial-card">
+          <div class="stars">★★★★★</div>
+          <blockquote>“A Simpli transformou nosso ERP em semanas. O time entendeu nossas dores e entregou uma solução que realmente funciona.”</blockquote>
+          <div class="testimonial-author">
+            <div class="avatar-square">M</div>
+            <div><div class="name">Mariana Costa</div><div class="role">COO · Varejo Digital</div></div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="stars">★★★★★</div>
+          <blockquote>“Migramos nosso SaaS para uma arquitetura mais enxuta com a Simpli. Reduzimos custos em 30% e melhoramos a experiência do usuário.”</blockquote>
+          <div class="testimonial-author">
+            <div class="avatar-square">R</div>
+            <div><div class="name">Rodrigo Almeida</div><div class="role">CTO · Fintech</div></div>
+          </div>
+        </div>
+        <div class="testimonial-card">
+          <div class="stars">★★★★★</div>
+          <blockquote>“O suporte da Simpli é diferenciado. Sempre atenciosos, nunca nos deixaram na mão.”</blockquote>
+          <div class="testimonial-author">
+            <div class="avatar-square">A</div>
+            <div><div class="name">Ana Beatriz</div><div class="role">Gerente de Operações</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-head center">
+        <div class="section-label"><span class="mark"></span>Dúvidas comuns</div>
+        <h2 class="section-title">Perguntas que merecem respostas diretas</h2>
+        <p class="section-sub">Acreditamos que informação clara é o primeiro passo para uma parceria de confiança.</p>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false" role="button">
+            <span>Quanto custa um projeto personalizado?</span>
+            <i class="fas fa-plus"></i>
+          </button>
+          <div class="faq-answer"><p>Os valores variam de acordo com a complexidade e escopo. Fazemos uma análise gratuita e apresentamos um orçamento detalhado, com todas as etapas e prazos. Sem surpresas.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false" role="button">
+            <span>Qual é o prazo médio de entrega?</span>
+            <i class="fas fa-plus"></i>
+          </button>
+          <div class="faq-answer"><p>Depende do projeto, mas geralmente entregamos uma primeira versão funcional em 4 a 8 semanas. Mantemos você informado semanalmente sobre o progresso.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false" role="button">
+            <span>Vocês dão suporte após a entrega?</span>
+            <i class="fas fa-plus"></i>
+          </button>
+          <div class="faq-answer"><p>Sim! Oferecemos um período de garantia e planos de manutenção flexíveis. Nosso time está disponível para ajustes e evolução contínua.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" aria-expanded="false" role="button">
+            <span>Como funciona a proteção de dados?</span>
+            <i class="fas fa-plus"></i>
+          </button>
+          <div class="faq-answer"><p>Seguimos rigorosamente a LGPD e práticas de segurança. Seus dados são tratados com confidencialidade e utilizamos criptografia em todos os sistemas.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GARANTIA -->
+  <section class="section" style="border-bottom:none;">
+    <div class="container">
+      <div class="guarantee-box">
+        <span class="mark"></span>
+        <h2>Garantia de satisfação de 30 dias</h2>
+        <p>Se durante o primeiro mês você não ficar 100% satisfeito com nosso trabalho, devolvemos seu investimento. Sem burocracia, sem perguntas.</p>
+        <a href="#contato" class="btn btn-primary">Quero essa garantia</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL (WhatsApp) -->
+  <section id="contato">
+    <div class="container">
+      <div class="cta-section">
+        <h2>Vamos simplificar seu próximo projeto?</h2>
+        <p>Fale diretamente com a gente pelo WhatsApp. Resposta rápida, sem robôs, sem formulários.</p>
+        <a href="https://wa.me/5569992494302?text=Ol%C3%A1!%20Gostaria%20de%20saber%20mais%20sobre%20os%20servi%C3%A7os%20da%20simpli." 
+           class="btn btn-primary" 
+           target="_blank" 
+           rel="noopener noreferrer">
+          <i class="fab fa-whatsapp"></i> Chamar no WhatsApp
+        </a>
+        <p class="cta-note"><i class="fas fa-clock"></i> Resposta em até 24h úteis · Atendimento humano</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RODAPÉ -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="#" class="logo" id="footerLogoLink">
+            <img src="/images/simpli-logo.png" alt="simpli" />
+          </a>
+          <p>Sistemas personalizados com propósito. Tecnologia a serviço da simplicidade e da ética nos negócios.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Navegação</h4>
+          <ul>
+            <li><a href="#solucoes">Soluções</a></li>
+            <li><a href="#depoimentos">Depoimentos</a></li>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="#contato">Contato</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Políticas</h4>
+          <ul>
+            <li><a href="#">Política de Privacidade</a></li>
+            <li><a href="#">Termos de Uso</a></li>
+            <li><a href="#">LGPD</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contato</h4>
+          <ul>
+            <li class="plain"><i class="fas fa-envelope"></i> simpli2706@gmail.com</li>
+            <li class="plain"><i class="fas fa-phone"></i> +55 (69) 99249-4302</li>
+            <li class="plain"><i class="fas fa-map-marker-alt"></i> Porto Velho, RO</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 simpli. Todos os direitos reservados.</span>
+        <div class="footer-social">
+          <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+          <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/script.js"></script>
+</body>
+</html>
+</file>
+
+<file path="public/css/style.css">
+/* ============ RESET ============ */
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root{
+  --ink:#0a0a0a;
+  --paper:#ffffff;
+  --teal:#28e2c8;
+  --teal-dark:#14b39d;
+  --gray-50:#fafafa;
+  --gray-100:#f2f2f0;
+  --gray-300:#d8d8d4;
+  --gray-500:#8a8a86;
+  --gray-700:#4a4a47;
+  --border:rgba(10,10,10,0.12);
+  --ease:0.2s ease;
+}
+
+html{ scroll-behavior:smooth; }
+
+body{
+  font-family:'Inter', sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+
+h1,h2,h3,h4,.logo,.btn,.eyebrow{ font-family:'Space Grotesk', sans-serif; }
+
+.container{ max-width:1160px; margin:0 auto; padding:0 32px; }
+
+a{ text-decoration:none; color:inherit; }
+img{ max-width:100%; display:block; }
+ul{ list-style:none; }
+
+::selection{ background:var(--teal); color:var(--ink); }
+
+/* ============ SIGNATURE: TEAL SQUARE MARK ============ */
+.mark{
+  display:inline-block;
+  width:8px; height:8px;
+  background:var(--teal);
+  flex-shrink:0;
+}
+
+/* ============ BUTTONS ============ */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:15px 30px;
+  font-weight:500;
+  font-size:0.95rem;
+  border:1px solid var(--ink);
+  cursor:pointer;
+  transition:var(--ease);
+  letter-spacing:0.01em;
+}
+.btn-primary{
+  background:var(--ink);
+  color:var(--paper);
+}
+.btn-primary:hover{ background:var(--teal-dark); border-color:var(--teal-dark); color:var(--ink); }
+
+.btn-outline{
+  background:transparent;
+  color:var(--ink);
+}
+.btn-outline:hover{ background:var(--ink); color:var(--paper); }
+
+/* ============ HEADER ============ */
+header{
+  padding:0;
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:0;
+  background:rgba(255,255,255,0.92);
+  backdrop-filter:blur(6px);
+  z-index:100;
+}
+.header-content{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  height:76px;
+}
+.logo{
+  font-size:1.4rem;
+  font-weight:600;
+  color:var(--ink);
+  letter-spacing:-0.02em;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.logo img{ height:150px; width:auto; }
+
+.nav-links{
+  display:flex;
+  gap:40px;
+  align-items:center;
+}
+.nav-links a:not(.btn){
+  font-family:'Inter', sans-serif;
+  font-weight:500;
+  font-size:0.9rem;
+  color:var(--gray-700);
+  transition:var(--ease);
+}
+.nav-links a:not(.btn):hover{ color:var(--ink); }
+.nav-links .btn{ padding:11px 24px; font-size:0.88rem; }
+
+.menu-toggle{
+  display:none;
+  font-size:1.4rem;
+  background:none;
+  border:none;
+  color:var(--ink);
+  cursor:pointer;
+}
+
+/* ============ HERO ============ */
+.hero{ padding:100px 0 90px; border-bottom:1px solid var(--border); }
+.hero-grid{
+  display:grid;
+  grid-template-columns:1.1fr 0.9fr;
+  gap:70px;
+  align-items:center;
+}
+.eyebrow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:0.8rem;
+  font-weight:600;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--gray-700);
+  margin-bottom:28px;
+}
+.hero-content h1{
+  font-size:3.4rem;
+  font-weight:600;
+  line-height:1.08;
+  letter-spacing:-0.02em;
+  color:var(--ink);
+  margin-bottom:26px;
+}
+.hero-content h1 em{
+  font-style:normal;
+  color:var(--teal-dark);
+}
+.hero-content p{
+  font-family:'Inter', sans-serif;
+  font-size:1.1rem;
+  color:var(--gray-700);
+  max-width:460px;
+  margin-bottom:36px;
+}
+.hero-buttons{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:32px; }
+.hero-note{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:0.85rem;
+  color:var(--gray-500);
+}
+
+/* --- hero visual: system grid --- */
+.hero-visual{
+  aspect-ratio:1/1;
+  border:1px solid var(--border);
+  padding:24px;
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  grid-template-rows:repeat(6,1fr);
+  gap:6px;
+}
+.hv-cell{ background:var(--gray-100); transition:background var(--ease); }
+.hv-cell.on{ background:var(--ink); }
+.hv-cell.teal{ background:var(--teal); }
+
+/* ============ SECTIONS ============ */
+.section{ padding:100px 0; border-bottom:1px solid var(--border); }
+.section-head{ max-width:640px; margin-bottom:56px; }
+.section-head.center{ margin-left:auto; margin-right:auto; text-align:center; }
+.section-label{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:0.8rem;
+  font-weight:600;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--gray-700);
+  margin-bottom:16px;
+}
+.section-head.center .section-label{ justify-content:center; }
+.section-title{
+  font-size:2.1rem;
+  font-weight:600;
+  letter-spacing:-0.02em;
+  color:var(--ink);
+  line-height:1.2;
+  margin-bottom:14px;
+}
+.section-sub{ font-size:1.02rem; color:var(--gray-700); }
+
+/* ============ BENEFÍCIOS ============ */
+.benefits-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  border-top:1px solid var(--border);
+  border-left:1px solid var(--border);
+}
+.benefit-card{
+  padding:40px 32px;
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  transition:background var(--ease);
+}
+.benefit-card:hover{ background:var(--gray-50); }
+.benefit-index{
+  font-family:'Space Grotesk', sans-serif;
+  font-size:0.8rem;
+  color:var(--gray-500);
+  margin-bottom:24px;
+}
+.benefit-card h3{
+  font-size:1.15rem;
+  font-weight:600;
+  margin-bottom:10px;
+  color:var(--ink);
+}
+.benefit-card p{ color:var(--gray-700); font-size:0.95rem; }
+
+/* ============ SOLUÇÕES ============ */
+.solutions{ background:var(--ink); color:var(--paper); border-bottom:none; }
+.solutions .section-label{ color:var(--teal); }
+.solutions .section-title{ color:var(--paper); }
+.solutions .section-sub{ color:rgba(255,255,255,0.65); }
+
+.solutions-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1px;
+  background:rgba(255,255,255,0.14);
+  margin-top:8px;
+}
+.solution-card{
+  background:var(--ink);
+  padding:36px 30px;
+  transition:background var(--ease);
+}
+.solution-card:hover{ background:#141414; }
+.solution-num{ font-size:0.8rem; color:var(--teal); margin-bottom:20px; }
+.solution-card h3{ font-size:1.25rem; font-weight:600; margin-bottom:10px; }
+.solution-card p{ color:rgba(255,255,255,0.65); font-size:0.92rem; margin-bottom:18px; }
+.solution-tag{
+  display:inline-block;
+  font-size:0.75rem;
+  font-weight:500;
+  color:var(--teal);
+  border:1px solid rgba(40,226,200,0.35);
+  padding:5px 12px;
+}
+
+/* ============ DEPOIMENTOS ============ */
+.testimonials-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  border-top:1px solid var(--border);
+  border-left:1px solid var(--border);
+}
+.testimonial-card{
+  padding:32px 28px;
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+}
+.stars{ color:var(--teal-dark); margin-bottom:16px; font-size:0.85rem; letter-spacing:3px; }
+.testimonial-card blockquote{
+  color:var(--ink);
+  font-size:0.98rem;
+  margin-bottom:24px;
+  flex:1;
+}
+.testimonial-author{ display:flex; align-items:center; gap:12px; }
+.avatar-square{
+  width:38px; height:38px;
+  background:var(--gray-100);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:600;
+  font-size:0.9rem;
+  color:var(--ink);
+  flex-shrink:0;
+}
+.testimonial-author .name{ font-weight:600; font-size:0.92rem; }
+.testimonial-author .role{ font-size:0.82rem; color:var(--gray-500); }
+
+/* ============ FAQ ============ */
+.faq-list{ max-width:720px; margin:0 auto; border-top:1px solid var(--border); }
+.faq-item{ border-bottom:1px solid var(--border); }
+.faq-question{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:500;
+  font-size:1.02rem;
+  color:var(--ink);
+  cursor:pointer;
+  background:none;
+  border:none;
+  width:100%;
+  text-align:left;
+  padding:24px 4px;
+}
+.faq-question i{ transition:transform var(--ease); color:var(--gray-500); font-size:0.85rem; }
+.faq-question.active i{ transform:rotate(45deg); }
+.faq-answer{
+  max-height:0;
+  overflow:hidden;
+  transition:max-height 0.25s ease;
+  color:var(--gray-700);
+  font-size:0.95rem;
+}
+.faq-answer.open{ max-height:200px; padding-bottom:24px; }
+
+/* ============ GARANTIA ============ */
+.guarantee-box{
+  border:1px solid var(--border);
+  padding:56px 40px;
+  text-align:center;
+  max-width:760px;
+  margin:0 auto;
+}
+.guarantee-box .mark{ margin:0 auto 20px; }
+.guarantee-box h2{ font-size:1.7rem; font-weight:600; margin-bottom:12px; }
+.guarantee-box p{ color:var(--gray-700); max-width:480px; margin:0 auto 28px; }
+
+/* ============ CTA FINAL ============ */
+.cta-section{
+  background:var(--ink);
+  color:var(--paper);
+  padding:80px 40px;
+  text-align:center;
+}
+.cta-section h2{ font-size:2.1rem; font-weight:600; margin-bottom:14px; letter-spacing:-0.02em; }
+.cta-section p{
+  font-size:1.02rem;
+  color:rgba(255,255,255,0.65);
+  margin-bottom:32px;
+  max-width:560px;
+  margin-left:auto;
+  margin-right:auto;
+}
+.cta-section .btn-primary{
+  background:var(--teal);
+  color:var(--ink);
+  border-color:var(--teal);
+}
+.cta-section .btn-primary:hover{ background:var(--teal-dark); border-color:var(--teal-dark); }
+.cta-note{ margin-top:22px; font-size:0.85rem; color:rgba(255,255,255,0.5); }
+
+/* ============ RODAPÉ ============ */
+footer{ padding:64px 0 28px; }
+.footer-grid{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:40px;
+  margin-bottom:56px;
+}
+.footer-brand .logo{ margin-bottom:14px; }
+.footer-brand p{ color:var(--gray-700); max-width:280px; font-size:0.92rem; }
+.footer-col h4{
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:600;
+  font-size:0.85rem;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  margin-bottom:18px;
+}
+.footer-col ul li{ margin-bottom:11px; }
+.footer-col ul a{ color:var(--gray-700); font-size:0.92rem; transition:color var(--ease); }
+.footer-col ul a:hover{ color:var(--ink); }
+.footer-col ul li.plain{ color:var(--gray-700); font-size:0.92rem; display:flex; gap:8px; align-items:flex-start; }
+.footer-bottom{
+  border-top:1px solid var(--border);
+  padding-top:24px;
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:16px;
+  font-size:0.85rem;
+  color:var(--gray-500);
+}
+.footer-social{ display:flex; gap:20px; }
+.footer-social a{ color:var(--gray-500); font-size:1rem; transition:color var(--ease); }
+.footer-social a:hover{ color:var(--ink); }
+
+/* ============ RESPONSIVO ============ */
+@media (max-width:992px){
+  .hero-grid{ grid-template-columns:1fr; }
+  .hero-visual{ max-width:340px; margin:0 auto; }
+  .hero-content{ text-align:center; }
+  .hero-content p{ margin-left:auto; margin-right:auto; }
+  .hero-buttons{ justify-content:center; }
+  .eyebrow{ justify-content:center; }
+  .benefits-grid,.solutions-grid,.testimonials-grid{ grid-template-columns:1fr 1fr; }
+  .footer-grid{ grid-template-columns:1fr 1fr; }
+}
+
+@media (max-width:768px){
+  .nav-links{
+    display:none;
+    flex-direction:column;
+    align-items:flex-start;
+    background:var(--paper);
+    position:absolute;
+    top:76px; left:0; width:100%;
+    padding:32px 32px;
+    border-bottom:1px solid var(--border);
+    gap:20px;
+  }
+  .nav-links.open{ display:flex; }
+  .menu-toggle{ display:block; }
+  .nav-links .btn{ width:100%; justify-content:center; }
+
+  .hero{ padding:60px 0 60px; }
+  .hero-content h1{ font-size:2.3rem; }
+  .section{ padding:64px 0; }
+  .section-title{ font-size:1.7rem; }
+  .benefits-grid,.solutions-grid,.testimonials-grid{ grid-template-columns:1fr; }
+  .footer-grid{ grid-template-columns:1fr; gap:32px; }
+  .footer-bottom{ flex-direction:column; align-items:flex-start; }
+  .cta-section{ padding:56px 24px; }
+  .cta-section h2{ font-size:1.6rem; }
+}
+</file>
+
+</files>

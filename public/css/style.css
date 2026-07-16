@@ -93,7 +93,16 @@ header{
   align-items:center;
   gap:6px;
 }
-.logo img{ height:150px; width:auto; }
+.logo img{ height:38px; width:auto; display:block; }
+
+/* Focus accessibility */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--teal-dark);
+  outline-offset: 2px;
+}
 
 .nav-links{
   display:flex;
@@ -176,9 +185,20 @@ header{
   grid-template-rows:repeat(6,1fr);
   gap:6px;
 }
-.hv-cell{ background:var(--gray-100); transition:background var(--ease); }
+.hv-cell{
+  background:var(--gray-100);
+  transition:background var(--ease), transform var(--ease), box-shadow var(--ease);
+  position:relative;
+}
 .hv-cell.on{ background:var(--ink); }
 .hv-cell.teal{ background:var(--teal); }
+.hv-cell:hover {
+  background:var(--teal) !important;
+  transform:scale(1.18);
+  box-shadow:0 0 12px var(--teal);
+  z-index:2;
+  cursor:pointer;
+}
 
 /* ============ SECTIONS ============ */
 .section{ padding:100px 0; border-bottom:1px solid var(--border); }
@@ -402,6 +422,139 @@ footer{ padding:64px 0 28px; }
 .footer-social a{ color:var(--gray-500); font-size:1rem; transition:color var(--ease); }
 .footer-social a:hover{ color:var(--ink); }
 
+/* ============ WHATSAPP BUTTON & CONTACT FORM ============ */
+.btn-whatsapp {
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:15px 30px;
+  font-weight:500;
+  font-size:0.95rem;
+  border:1px solid #25D366;
+  background:#25D366;
+  color:#ffffff;
+  cursor:pointer;
+  transition:var(--ease);
+  letter-spacing:0.01em;
+}
+.btn-whatsapp:hover {
+  background:#128c7e;
+  border-color:#128c7e;
+  color:#ffffff;
+}
+
+.contato-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:64px;
+  align-items:start;
+}
+
+.cta-info h2 {
+  font-size:2.1rem;
+  font-weight:600;
+  margin-bottom:18px;
+  letter-spacing:-0.02em;
+}
+.cta-info p {
+  color:var(--gray-700);
+  font-size:1.02rem;
+  margin-bottom:28px;
+}
+.cta-actions {
+  margin-bottom:24px;
+}
+.cta-note {
+  font-size:0.85rem;
+  color:var(--gray-500);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.contact-form-container {
+  background:var(--gray-50);
+  border:1px solid var(--border);
+  padding:40px;
+}
+
+.contact-form-container form {
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+
+.form-group {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.form-group label {
+  font-family:'Space Grotesk', sans-serif;
+  font-size:0.88rem;
+  font-weight:600;
+  color:var(--gray-700);
+}
+
+.form-group input,
+.form-group textarea {
+  width:100%;
+  min-height:48px;
+  padding:12px 16px;
+  font-family:'Inter', sans-serif;
+  font-size:0.95rem;
+  border:1px solid var(--gray-300);
+  background:var(--paper);
+  color:var(--ink);
+  transition:border-color var(--ease);
+}
+.form-group input:focus,
+.form-group textarea:focus {
+  outline:none;
+  border-color:var(--ink);
+}
+
+.form-group textarea {
+  min-height:120px;
+  resize:vertical;
+}
+
+/* User Interaction validation styling */
+.form-group input:not(:placeholder-shown):user-invalid,
+.form-group textarea:not(:placeholder-shown):user-invalid {
+  border-color:#e02424;
+  background-color:#fdf2f2;
+}
+.form-group input:not(:placeholder-shown):user-valid,
+.form-group textarea:not(:placeholder-shown):user-valid {
+  border-color:#0e9f6e;
+  background-color:#f3faf7;
+}
+
+.error-msg {
+  font-size:0.78rem;
+  color:#e02424;
+  min-height:16px;
+  display:block;
+}
+
+.form-status {
+  font-size:0.9rem;
+  font-weight:500;
+  margin-top:10px;
+  min-height:24px;
+}
+.form-status.success {
+  color:#0e9f6e;
+}
+.form-status.error {
+  color:#e02424;
+}
+.form-status.loading {
+  color:var(--gray-500);
+}
+
 /* ============ RESPONSIVO ============ */
 @media (max-width:992px){
   .hero-grid{ grid-template-columns:1fr; }
@@ -412,21 +565,35 @@ footer{ padding:64px 0 28px; }
   .eyebrow{ justify-content:center; }
   .benefits-grid,.solutions-grid,.testimonials-grid{ grid-template-columns:1fr 1fr; }
   .footer-grid{ grid-template-columns:1fr 1fr; }
+  .contato-grid { grid-template-columns:1fr; gap:40px; }
+  .cta-info { text-align:center; }
+  .cta-note { justify-content:center; }
+  .contact-form-container { padding:30px 24px; }
 }
 
 @media (max-width:768px){
   .nav-links{
-    display:none;
+    display:flex;
     flex-direction:column;
     align-items:flex-start;
     background:var(--paper);
     position:absolute;
     top:76px; left:0; width:100%;
-    padding:32px 32px;
+    padding:0 32px;
     border-bottom:1px solid var(--border);
     gap:20px;
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    transition:max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease;
+    pointer-events:none;
   }
-  .nav-links.open{ display:flex; }
+  .nav-links.open{
+    max-height:360px;
+    opacity:1;
+    padding:32px 32px;
+    pointer-events:auto;
+  }
   .menu-toggle{ display:block; }
   .nav-links .btn{ width:100%; justify-content:center; }
 
@@ -437,6 +604,4 @@ footer{ padding:64px 0 28px; }
   .benefits-grid,.solutions-grid,.testimonials-grid{ grid-template-columns:1fr; }
   .footer-grid{ grid-template-columns:1fr; gap:32px; }
   .footer-bottom{ flex-direction:column; align-items:flex-start; }
-  .cta-section{ padding:56px 24px; }
-  .cta-section h2{ font-size:1.6rem; }
 }
