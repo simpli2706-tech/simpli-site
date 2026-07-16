@@ -93,7 +93,7 @@ header{
   align-items:center;
   gap:6px;
 }
-.logo img{ height:38px; width:auto; display:block; }
+.logo img{ height:54px; width:auto; display:block; }
 
 /* Focus accessibility */
 a:focus-visible,
